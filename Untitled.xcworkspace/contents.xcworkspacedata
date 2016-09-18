@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workspace
+   version = "1.0">
+   <FileRef
+      location = "group:Demo_RWLock/Demo_RWLock.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Demo_Locks/Demo_Locks.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Demo_Operation/Demo_Operation.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Demo_GCD/Demo_GCD.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Demo_Pthread/Demo_Pthread.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:Demo_NSThread/Demo_NSThread.xcodeproj">
+   </FileRef>
+</Workspace>
