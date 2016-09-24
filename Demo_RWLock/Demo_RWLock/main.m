@@ -17,21 +17,6 @@ int main(int argc, const char * argv[]) {
 
     __block size_t index = 0;
     dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-//    dispatch_apply(1000, queue, ^(size_t idx) {
-//      if (idx % 4 == 0) {
-//        // write
-//        pthread_rwlock_wrlock(&rwlock);
-//        index = idx;
-//        NSLog(@"W : %@, %ld", [NSThread currentThread], index);
-//        pthread_rwlock_unlock(&rwlock);
-//      } else {
-//        // read
-//        pthread_rwlock_rdlock(&rwlock);
-//        NSLog(@"R : %@, %ld", [NSThread currentThread], index);
-//        pthread_rwlock_unlock(&rwlock);
-//      }
-//    });
-
     for (NSInteger i = 0; i < 1000; ++i) {
       dispatch_async(queue, ^{
         if (i % 4 == 0) {
@@ -49,7 +34,10 @@ int main(int argc, const char * argv[]) {
       });
     }
 
+    // sleep 1s, 延时释放queue
     sleep(1);
+    pthread_rwlock_destroy(&rwlock);
   }
-    return 0;
+
+  return 0;
 }

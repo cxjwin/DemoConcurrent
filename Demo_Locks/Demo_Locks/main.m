@@ -12,6 +12,8 @@
 
 @import Darwin;
 
+// 早期的方式执行时间的统计block块
+// 后续被dispatch_benchmark替代
 double JGTimeBlock (void (^block)(void)) {
   mach_timebase_info_data_t info;
   if (mach_timebase_info(&info) != KERN_SUCCESS) return -1.0;
@@ -29,12 +31,17 @@ int main(int argc, const char * argv[]) {
   @autoreleasepool {
     extern uint64_t dispatch_benchmark(size_t count, void (^block)(void));
 
+    // 1,000,000
     static const NSUInteger LOOPAGE = 1e6;
+    // 执行10次提高精确度
     static size_t const iterations = 10;
-
+    // 记录加锁时间信息的字典
     NSMutableDictionary *dict = [NSMutableDictionary dictionary];
 
-    uint64_t deltaTime = dispatch_benchmark(iterations, ^{
+    uint64_t deltaTime = 0;
+
+    // 不加锁
+    deltaTime = dispatch_benchmark(iterations, ^{
       NSUInteger num = 0;
       for (NSUInteger i = 0; i < LOOPAGE; ++i) {
         ++num;
@@ -42,6 +49,7 @@ int main(int argc, const char * argv[]) {
     });
     dict[@"NoLock"] = @(deltaTime);
 
+    // NSLock
     deltaTime = dispatch_benchmark(iterations, ^{
       NSLock *lock = [[NSLock alloc] init];
       NSUInteger num = 0;
@@ -53,6 +61,7 @@ int main(int argc, const char * argv[]) {
     });
     dict[@"NSLock"] = @(deltaTime);
 
+    // NSRecursiveLock
     deltaTime = dispatch_benchmark(iterations, ^{
       NSRecursiveLock *lock = [[NSRecursiveLock alloc] init];
       NSUInteger num = 0;
@@ -64,6 +73,7 @@ int main(int argc, const char * argv[]) {
     });
     dict[@"NSRecursiveLock"] = @(deltaTime);
 
+    // NSCondition
     deltaTime = dispatch_benchmark(iterations, ^{
       NSCondition *lock = [[NSCondition alloc] init];
       NSUInteger num = 0;
@@ -75,6 +85,7 @@ int main(int argc, const char * argv[]) {
     });
     dict[@"NSCondition"] = @(deltaTime);
 
+    // NSConditionLock
     deltaTime = dispatch_benchmark(iterations, ^{
       NSConditionLock *lock = [[NSConditionLock alloc] init];
       NSUInteger num = 0;
@@ -86,6 +97,7 @@ int main(int argc, const char * argv[]) {
     });
     dict[@"NSConditionLock"] = @(deltaTime);
 
+    // pthread_mutex
     deltaTime = dispatch_benchmark(iterations, ^{
       pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
       NSUInteger num = 0;
@@ -97,9 +109,9 @@ int main(int argc, const char * argv[]) {
     });
     dict[@"Mutex"] = @(deltaTime);
 
-    __block pthread_rwlock_t rwlock;
-    pthread_rwlock_init(&rwlock, NULL);
+    // pthread_rwlock
     deltaTime = dispatch_benchmark(iterations, ^{
+      pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
       NSUInteger num = 0;
       NSUInteger i = 0;
       for (; i < LOOPAGE / 2; ++i) {
@@ -115,6 +127,7 @@ int main(int argc, const char * argv[]) {
     });
     dict[@"RWLock"] = @(deltaTime);
 
+    // OSSpinLock
     deltaTime = dispatch_benchmark(iterations, ^{
       OSSpinLock lock = OS_SPINLOCK_INIT;
       NSUInteger num = 0;
@@ -126,8 +139,9 @@ int main(int argc, const char * argv[]) {
     });
     dict[@"SpinLock"] = @(deltaTime);
 
-    dispatch_semaphore_t dsema = dispatch_semaphore_create(1);
+    // dispatch_semaphore
     deltaTime = dispatch_benchmark(iterations, ^{
+      dispatch_semaphore_t dsema = dispatch_semaphore_create(1);
       NSUInteger num = 0;
       for (NSUInteger i = 0; i < LOOPAGE; ++i) {
         dispatch_semaphore_wait(dsema, DISPATCH_TIME_FOREVER);
@@ -137,6 +151,7 @@ int main(int argc, const char * argv[]) {
     });
     dict[@"Semaphore"] = @(deltaTime);
 
+    // dispatch_queue
     deltaTime = dispatch_benchmark(iterations, ^{
       dispatch_queue_t queue = dispatch_queue_create("test", DISPATCH_QUEUE_SERIAL);
       __block NSInteger num = 0;
@@ -148,6 +163,7 @@ int main(int argc, const char * argv[]) {
     });
     dict[@"GCD"] = @(deltaTime);
 
+    // atomic
     deltaTime = dispatch_benchmark(iterations, ^{
       int64_t num = 0;
       for (NSUInteger i = 0; i < LOOPAGE; ++i) {
@@ -156,6 +172,7 @@ int main(int argc, const char * argv[]) {
     });
     dict[@"Atomic"] = @(deltaTime);
 
+    // @synchronized
     NSObject *dummy = [[NSObject alloc] init];
     deltaTime = dispatch_benchmark(iterations, ^{
       NSUInteger num = 0;
